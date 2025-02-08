@@ -175,13 +175,18 @@ def save_endangered_data_to_csv(species_data, species_name, filename='combined_s
         else:
             writer.writerow([species_name, 'No data', 'All', 0, 'Endangered'])
 
+def clean_species_name(name):
+    """
+    Remove anything inside parentheses from species name
+    """
+    return ' '.join(part.strip() for part in name.split('(')[0].split())
+
 def main():
     # Create/overwrite the combined data file with header
     with open('combined_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
 
-    # Marine species analysis
     print("Searching for marine species...")
     species_results = search_marine_species(limit=10)
     
@@ -189,14 +194,15 @@ def main():
         marine_species_data = {}
         for species in species_results:
             scientific_name = species.get('scientificName')
+            clean_name = clean_species_name(scientific_name)
             species_key = species.get('key')
             
             print(f"\n{'='*50}")
-            print(f"Marine Species: {scientific_name}")
+            print(f"Marine Species: {clean_name}")
             print(f"{'='*50}")
             
             seasonal_data = get_seasonal_population(species_key)
-            marine_species_data[scientific_name] = seasonal_data
+            marine_species_data[clean_name] = seasonal_data
             
             # Print seasonal data
             for year, seasons in seasonal_data.items():
@@ -213,7 +219,7 @@ def main():
                 for year, seasons in seasonal_data.items():
                     for season in ['Winter', 'Spring', 'Summer', 'Fall']:
                         count = seasons.get(season, 0)
-                        writer.writerow([scientific_name, year, season, count, 'Marine'])
+                        writer.writerow([clean_name, year, season, count, 'Marine'])
 
     print("\nAll data has been saved to 'combined_species_data.csv'")
 
