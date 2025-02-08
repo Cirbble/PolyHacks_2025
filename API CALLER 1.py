@@ -36,7 +36,7 @@ def get_season(month):
     else:
         return 'Fall'
 
-def get_seasonal_population(species_key, start_year=1980, end_year=2024):
+def get_seasonal_population(species_key, start_year=1900, end_year=2024):
     """
     Get seasonal occurrence counts for a specific species
     """
