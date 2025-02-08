@@ -38,7 +38,7 @@ def get_season(month):
     else:
         return 'Fall'
 
-def get_seasonal_population(species_key, start_year=1900, end_year=2024):
+def get_seasonal_population(species_key, start_year=1980, end_year=2024):
     """
     Get seasonal occurrence counts for a specific species
     """
@@ -88,7 +88,58 @@ def get_seasonal_population(species_key, start_year=1900, end_year=2024):
     
     return dict(sorted(seasonal_counts.items()))
 
-def get_species_population_trend(scientific_name, start_year=2000):
+def get_monthly_population(species_key, start_year=1980, end_year=2024):
+    """
+    Get monthly occurrence counts for a specific species
+    """
+    base_url = "https://api.gbif.org/v1/occurrence/search"
+    monthly_counts = defaultdict(lambda: defaultdict(int))
+    
+    limit = 300
+    offset = 0
+    
+    while True:
+        params = {
+            'speciesKey': species_key,
+            'limit': limit,
+            'offset': offset,
+            'year': f'{start_year},{end_year}',
+            'basisOfRecord': 'HUMAN_OBSERVATION'
+        }
+        
+        try:
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not data['results']:
+                break
+                
+            for occurrence in data['results']:
+                year = occurrence.get('year')
+                event_date = occurrence.get('eventDate')
+                
+                if year and event_date:
+                    try:
+                        date = datetime.strptime(event_date.split('T')[0], '%Y-%m-%d')
+                        monthly_counts[year][date.month] += 1
+                    except (ValueError, IndexError):
+                        continue
+            
+            offset += limit
+            if offset >= data['count']:
+                break
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Error accessing GBIF API: {e}")
+            break
+    
+    return dict(sorted(monthly_counts.items()))
+
+def get_species_population_trend(scientific_name, start_year=1980):
+    """
+    Get population trend starting from 1980
+    """
     # Define base URL
     base_url = "https://api.gbif.org/v1/"
     
@@ -145,20 +196,36 @@ def plot_population_trend(species_data, species_name):
     plt.tight_layout()
     plt.show()
 
+def calculate_monthly_index(year, month):
+    """
+    Calculate monthly index starting from 0 in January 1980
+    """
+    base_year = 1980
+    months_since_1980 = ((year - base_year) * 12) + (month - 1)
+    return months_since_1980
+
 def save_marine_data_to_csv(species_data, filename='marine_species_data.csv'):
     """
-    Save marine species seasonal data to CSV
+    Save marine species data with monthly calculations
     """
     with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        # Write header
-        writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
+        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex', 'className'])
         
-        for species_name, seasonal_data in species_data.items():
-            for year, seasons in seasonal_data.items():
-                for season in ['Winter', 'Spring', 'Summer', 'Fall']:
-                    count = seasons.get(season, 0)
-                    writer.writerow([species_name, year, season, count, 'Marine'])
+        for species_name, yearly_data in species_data.items():
+            class_name = species_name.split()[0]  # Using genus as class name
+            
+            for year in sorted(yearly_data.keys()):
+                for month in range(1, 13):
+                    sightings = yearly_data[year].get(month, 0)
+                    monthly_index = calculate_monthly_index(year, month)
+                    
+                    writer.writerow([
+                        species_name,
+                        sightings,
+                        monthly_index,
+                        class_name
+                    ])
 
 def save_endangered_data_to_csv(species_data, species_name, filename='combined_species_data.csv', mode='a'):
     """
@@ -177,15 +244,25 @@ def save_endangered_data_to_csv(species_data, species_name, filename='combined_s
 
 def clean_species_name(name):
     """
-    Remove anything inside parentheses from species name
+    Clean species name by removing:
+    1. Year of description
+    2. Authority (person who described it)
+    3. Anything in parentheses
     """
-    return ' '.join(part.strip() for part in name.split('(')[0].split())
+    # First remove anything in parentheses
+    name = name.split('(')[0]
+    
+    # Remove the year and authority
+    parts = name.split(',')
+    clean_name = parts[0].strip()
+    
+    return clean_name
 
 def main():
-    # Create/overwrite the combined data file with header
-    with open('combined_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    # Create/overwrite the data file
+    with open('marine_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
+        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex', 'className'])
 
     print("Searching for marine species...")
     species_results = search_marine_species(limit=10)
@@ -201,27 +278,19 @@ def main():
             print(f"Marine Species: {clean_name}")
             print(f"{'='*50}")
             
-            seasonal_data = get_seasonal_population(species_key)
-            marine_species_data[clean_name] = seasonal_data
+            monthly_data = get_monthly_population(species_key)
+            marine_species_data[clean_name] = monthly_data
             
-            # Print seasonal data
-            for year, seasons in seasonal_data.items():
+            # Print data as it's collected
+            for year in sorted(monthly_data.keys()):
                 print(f"\nYear: {year}")
-                print("Season | Count")
-                print("-" * 20)
-                for season in ['Winter', 'Spring', 'Summer', 'Fall']:
-                    count = seasons.get(season, 0)
-                    print(f"{season:8}| {count:5}")
-            
-            # Save marine data to combined CSV
-            with open('combined_species_data.csv', 'a', newline='', encoding='utf-8') as csvfile:
-                writer = csv.writer(csvfile)
-                for year, seasons in seasonal_data.items():
-                    for season in ['Winter', 'Spring', 'Summer', 'Fall']:
-                        count = seasons.get(season, 0)
-                        writer.writerow([clean_name, year, season, count, 'Marine'])
-
-    print("\nAll data has been saved to 'combined_species_data.csv'")
+                for month in range(1, 13):
+                    count = monthly_data[year].get(month, 0)
+                    print(f"Month {month}: {count} sightings")
+        
+        # Save all data to CSV
+        save_marine_data_to_csv(marine_species_data)
+        print("\nData has been saved to 'marine_species_data.csv'")
 
 if __name__ == "__main__":
     main()
