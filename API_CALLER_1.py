@@ -142,21 +142,58 @@ def plot_population_trend(species_data, species_name):
     plt.tight_layout()
     plt.show()
 
+def save_marine_data_to_csv(species_data, filename='marine_species_data.csv'):
+    """
+    Save marine species seasonal data to CSV
+    """
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        # Write header
+        writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
+        
+        for species_name, seasonal_data in species_data.items():
+            for year, seasons in seasonal_data.items():
+                for season in ['Winter', 'Spring', 'Summer', 'Fall']:
+                    count = seasons.get(season, 0)
+                    writer.writerow([species_name, year, season, count, 'Marine'])
+
+def save_endangered_data_to_csv(species_data, species_name, filename='combined_species_data.csv', mode='a'):
+    """
+    Save endangered species data to CSV
+    """
+    with open(filename, mode, newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        if mode == 'w':  # Only write header if creating new file
+            writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
+        
+        if species_data:
+            for year, count in sorted(species_data.items()):
+                writer.writerow([species_name, year, 'All', count, 'Endangered'])
+        else:
+            writer.writerow([species_name, 'No data', 'All', 0, 'Endangered'])
+
 def main():
-    # Search for marine species
+    # Create/overwrite the combined data file with header
+    with open('combined_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
+
+    # First part: Marine species
     print("Searching for marine species...")
-    species_results = search_marine_species(limit=10)  # Limiting to 10 species for example
+    species_results = search_marine_species(limit=10)
     
     if species_results:
+        marine_species_data = {}
         for species in species_results:
             scientific_name = species.get('scientificName')
             species_key = species.get('key')
             
             print(f"\n{'='*50}")
-            print(f"Species: {scientific_name}")
+            print(f"Marine Species: {scientific_name}")
             print(f"{'='*50}")
             
             seasonal_data = get_seasonal_population(species_key)
+            marine_species_data[scientific_name] = seasonal_data
             
             # Print seasonal data
             for year, seasons in seasonal_data.items():
@@ -167,48 +204,33 @@ def main():
                     count = seasons.get(season, 0)
                     print(f"{season:8}| {count:5}")
             
-            # Print total observations
-            total = sum(sum(seasons.values()) for seasons in seasonal_data.values())
-            print(f"\nTotal observations: {total}")
+            # Save marine data to combined CSV
+            with open('combined_species_data.csv', 'a', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                for year, seasons in seasonal_data.items():
+                    for season in ['Winter', 'Spring', 'Summer', 'Fall']:
+                        count = seasons.get(season, 0)
+                        writer.writerow([scientific_name, year, season, count, 'Marine'])
 
-    # Example species to analyze
+    # Second part: Endangered species
     species_list = [
-        "Panthera leo",  # Lion
-        "Gorilla gorilla",  # Gorilla
-        "Panda ailuropoda melanoleuca",  # Giant Panda
-        "Elephas maximus",  # Asian Elephant
-        "Rhinoceros unicornis",  # Greater One-horned Rhinoceros
-        "Panthera tigris",  # Tiger
-        "Balaenoptera musculus",  # Blue Whale
-        "Pongo abelii",  # Sumatran Orangutan
-        "Geochelone elephantopus",  # Galápagos Giant Tortoise
-        "Panthera onca"  # Jaguar
+        "Panthera leo", "Gorilla gorilla", "Panda ailuropoda melanoleuca",
+        "Elephas maximus", "Rhinoceros unicornis", "Panthera tigris",
+        "Balaenoptera musculus", "Pongo abelii", "Geochelone elephantopus",
+        "Panthera onca"
     ]
 
-    # Get and plot data for each species
-    with open('endangered_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
-        # Create CSV writer
-        csv_writer = csv.writer(csvfile)
-        # Write header
-        csv_writer.writerow(['Species Name', 'Year', 'Observation Count'])
+    for species_name in species_list:
+        print(f"\nAnalyzing population trend for {species_name}...")
+        population_data = get_species_population_trend(species_name)
         
-        for species_name in species_list:
-            print(f"\nAnalyzing population trend for {species_name}...")
-            population_data = get_species_population_trend(species_name)
-            
-            if population_data:
-                print(f"Year-wise observations for {species_name}:")
-                # Sort the data by year and write to CSV
-                for year, count in sorted(population_data.items()):
-                    print(f"Year {year}: {count} observations")
-                    csv_writer.writerow([species_name, year, count])
-                
-                plot_population_trend(population_data, species_name)
-            else:
-                print("nothing found")
-                csv_writer.writerow([species_name, 'No data', 0])
+        # Save endangered species data to combined CSV
+        save_endangered_data_to_csv(population_data, species_name, 'combined_species_data.csv', 'a')
+        
+        if population_data:
+            plot_population_trend(population_data, species_name)
 
-    print("\nData has been saved to 'endangered_species_data.csv'")
+    print("\nAll data has been saved to 'combined_species_data.csv'")
 
 if __name__ == "__main__":
     main()
