@@ -89,6 +89,9 @@ def get_seasonal_population(species_key, start_year=1900, end_year=2024):
     return dict(sorted(seasonal_counts.items()))
 
 def get_species_population_trend(scientific_name, start_year=2000):
+    # Define base URL
+    base_url = "https://api.gbif.org/v1/"
+    
     # First, get the taxonKey for the species
     search_params = {
         'q': scientific_name,
@@ -178,7 +181,7 @@ def main():
         writer = csv.writer(csvfile)
         writer.writerow(['Species Name', 'Year', 'Season', 'Observation Count', 'Data Type'])
 
-    # First part: Marine species
+    # Marine species analysis
     print("Searching for marine species...")
     species_results = search_marine_species(limit=10)
     
@@ -211,24 +214,6 @@ def main():
                     for season in ['Winter', 'Spring', 'Summer', 'Fall']:
                         count = seasons.get(season, 0)
                         writer.writerow([scientific_name, year, season, count, 'Marine'])
-
-    # Second part: Endangered species
-    species_list = [
-        "Panthera leo", "Gorilla gorilla", "Panda ailuropoda melanoleuca",
-        "Elephas maximus", "Rhinoceros unicornis", "Panthera tigris",
-        "Balaenoptera musculus", "Pongo abelii", "Geochelone elephantopus",
-        "Panthera onca"
-    ]
-
-    for species_name in species_list:
-        print(f"\nAnalyzing population trend for {species_name}...")
-        population_data = get_species_population_trend(species_name)
-        
-        # Save endangered species data to combined CSV
-        save_endangered_data_to_csv(population_data, species_name, 'combined_species_data.csv', 'a')
-        
-        if population_data:
-            plot_population_trend(population_data, species_name)
 
     print("\nAll data has been saved to 'combined_species_data.csv'")
 
