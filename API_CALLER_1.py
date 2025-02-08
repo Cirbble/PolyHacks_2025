@@ -210,11 +210,9 @@ def save_marine_data_to_csv(species_data, filename='marine_species_data.csv'):
     """
     with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex', 'className'])
+        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex'])
         
         for species_name, yearly_data in species_data.items():
-            class_name = species_name.split()[0]  # Using genus as class name
-            
             for year in sorted(yearly_data.keys()):
                 for month in range(1, 13):
                     sightings = yearly_data[year].get(month, 0)
@@ -223,8 +221,7 @@ def save_marine_data_to_csv(species_data, filename='marine_species_data.csv'):
                     writer.writerow([
                         species_name,
                         sightings,
-                        monthly_index,
-                        class_name
+                        monthly_index
                     ])
 
 def save_endangered_data_to_csv(species_data, species_name, filename='combined_species_data.csv', mode='a'):
@@ -262,7 +259,7 @@ def main():
     # Create/overwrite the data file
     with open('marine_species_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex', 'className'])
+        writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex'])
 
     print("Searching for marine species...")
     species_results = search_marine_species(limit=10)
