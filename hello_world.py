@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 import matplotlib.pyplot as plt
+import csv
 
 # Define the base URL for the GBIF API
 base_url = "https://api.gbif.org/v1/"
@@ -67,15 +68,26 @@ species_list = [
 ]
 
 # Get and plot data for each species
-for species_name in species_list:
-    print(f"\nAnalyzing population trend for {species_name}...")
-    population_data = get_species_population_trend(species_name)
+with open('species_population_data.csv', 'w', newline='') as csvfile:
+    # Create CSV writer
+    csv_writer = csv.writer(csvfile)
+    # Write header
+    csv_writer.writerow(['Species Name', 'Year', 'Observation Count'])
     
-    if population_data:
-        print(f"Year-wise observations for {species_name}:")
-        for year, count in sorted(population_data.items()):
-            print(f"Year {year}: {count} observations")
+    for species_name in species_list:
+        print(f"\nAnalyzing population trend for {species_name}...")
+        population_data = get_species_population_trend(species_name)
         
-        plot_population_trend(population_data, species_name)
-    else:
-        print("nothing found")
+        if population_data:
+            print(f"Year-wise observations for {species_name}:")
+            # Sort the data by year and write to CSV
+            for year, count in sorted(population_data.items()):
+                print(f"Year {year}: {count} observations")
+                csv_writer.writerow([species_name, year, count])
+            
+            plot_population_trend(population_data, species_name)
+        else:
+            print("nothing found")
+            csv_writer.writerow([species_name, 'No data', 0])
+
+print("\nData has been saved to 'species_population_data.csv'")
