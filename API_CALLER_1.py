@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import csv
 import os
 
-def check_species_data_availability(species_key, timeout=5):
+def check_species_data_availability(species_key):
     """
     Quickly check if a species has accessible data
     """
@@ -17,7 +17,7 @@ def check_species_data_availability(species_key, timeout=5):
     }
     
     try:
-        response = requests.get(base_url, params=params, timeout=timeout)
+        response = requests.get(base_url, params=params)
         response.raise_for_status()
         data = response.json()
         return data['count'] > 0  # Return True if there are any records
@@ -145,17 +145,32 @@ def get_seasonal_population(species_key, start_year=1980, end_year=2024, timeout
     
     return dict(sorted(seasonal_counts.items())) if seasonal_counts else None
 
-def get_monthly_population(species_key, start_year=1980, end_year=2024, timeout=30):
+def get_monthly_population(species_key, start_year=1980, end_year=2024):
     """
-    Get monthly occurrence counts for a specific species with timeout
+    Get monthly occurrence counts for a specific species as fast as possible
     """
     base_url = "https://api.gbif.org/v1/occurrence/search"
     monthly_counts = defaultdict(lambda: defaultdict(int))
     
-    limit = 300
+    # Increase limit to get more data per request
+    limit = 1000  # Increased from 300
     offset = 0
     
     try:
+        # First get total count
+        params = {
+            'speciesKey': species_key,
+            'limit': 1,
+            'year': f'{start_year},{end_year}',
+            'basisOfRecord': 'HUMAN_OBSERVATION'
+        }
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        total_records = response.json()['count']
+        
+        print(f"\nCollecting {total_records} records:")
+        progress_length = 40  # Length of progress bar
+        
         while True:
             params = {
                 'speciesKey': species_key,
@@ -165,12 +180,19 @@ def get_monthly_population(species_key, start_year=1980, end_year=2024, timeout=
                 'basisOfRecord': 'HUMAN_OBSERVATION'
             }
             
-            response = requests.get(base_url, params=params, timeout=timeout)
+            response = requests.get(base_url, params=params)
             response.raise_for_status()
             data = response.json()
             
             if not data['results']:
                 break
+            
+            # Update progress bar
+            progress = min(offset + limit, total_records)
+            filled_length = int(progress_length * progress // total_records)
+            bar = '█' * filled_length + '-' * (progress_length - filled_length)
+            percent = progress * 100 // total_records
+            print(f'\rProgress: |{bar}| {percent}% Complete ({progress}/{total_records} records)', end='')
                 
             for occurrence in data['results']:
                 year = occurrence.get('year')
@@ -186,9 +208,11 @@ def get_monthly_population(species_key, start_year=1980, end_year=2024, timeout=
             offset += limit
             if offset >= data['count']:
                 break
+        
+        print()  # New line after progress bar
                 
-    except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
-        print(f"Error getting data for species {species_key}: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"\nError getting data for species {species_key}: {e}")
         return None
     
     return dict(sorted(monthly_counts.items())) if monthly_counts else None
@@ -197,7 +221,6 @@ def get_species_population_trend(scientific_name, start_year=1980):
     """
     Get population trend starting from 1980
     """
-    # Define base URL
     base_url = "https://api.gbif.org/v1/"
     
     # First, get the taxonKey for the species
@@ -338,8 +361,11 @@ def main():
         processed_count = 0
         skipped_count = 0
         first_species = True
+        total_species = len(species_results)
         
-        for species in species_results:
+        print(f"\nFound {total_species} species to process")
+        
+        for i, species in enumerate(species_results, 1):
             try:
                 scientific_name = species.get('scientificName')
                 clean_name = clean_species_name(scientific_name)
@@ -347,41 +373,40 @@ def main():
                 class_name = species.get('class', 'Unknown')
                 
                 print(f"\n{'='*50}")
-                print(f"Processing: {clean_name} ({class_name})")
+                print(f"Species {i}/{total_species}: {clean_name} ({class_name})")
                 print(f"{'='*50}")
                 
-                monthly_data = get_monthly_population(species_key)  # Using monthly instead of seasonal
+                monthly_data = get_monthly_population(species_key)
                 
                 if monthly_data:
-                    # Save data immediately for this species
                     save_species_to_csv(clean_name, monthly_data, first_write=first_species)
                     first_species = False
                     
                     processed_count += 1
-                    print(f"Successfully processed and saved {clean_name}")
+                    print(f"✓ Successfully processed and saved {clean_name}")
                     
                     # Print sample of data
-                    print("Sample of collected data:")
+                    print("\nSample of collected data:")
                     for year in list(sorted(monthly_data.keys()))[-3:]:
-                        print(f"\nYear {year}:")
-                        total_year = sum(monthly_data[year].values())
-                        print(f"Total sightings: {total_year}")
+                        print(f"Year {year}: {sum(monthly_data[year].values())} total sightings")
                 else:
-                    print(f"Skipping {clean_name} - No data available")
+                    print(f"✗ Skipping {clean_name} - No data available")
                     skipped_count += 1
                 
                 if processed_count >= 10:
                     break
                     
             except Exception as e:
-                print(f"Error processing {clean_name}: {e}")
+                print(f"✗ Error processing {clean_name}: {e}")
                 skipped_count += 1
                 continue
         
-        print(f"\nProcessing complete:")
-        print(f"- Successfully processed: {processed_count} species")
-        print(f"- Skipped: {skipped_count} species")
-        print(f"- Data saved to 'terrestrial_species_data.csv'")
+        print(f"\n{'='*50}")
+        print("Processing complete:")
+        print(f"✓ Successfully processed: {processed_count} species")
+        print(f"✗ Skipped: {skipped_count} species")
+        print(f"📁 Data saved to 'terrestrial_species_data.csv'")
+        print(f"{'='*50}")
     else:
         print("\nNo species found to process")
 
