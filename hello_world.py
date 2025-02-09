@@ -80,10 +80,11 @@ with open('species_population_data.csv', 'w', newline='') as csvfile:
         
         if population_data:
             print(f"Year-wise observations for {species_name}:")
-            # Sort the data by year and write to CSV
+            # Sort the data by year and write to CSV, excluding 0 counts
             for year, count in sorted(population_data.items()):
-                print(f"Year {year}: {count} observations")
-                csv_writer.writerow([species_name, year, count])
+                if count > 0:  # Only include non-zero counts
+                    print(f"Year {year}: {count} observations")
+                    csv_writer.writerow([species_name, year, count])
             
             plot_population_trend(population_data, species_name)
         else:
