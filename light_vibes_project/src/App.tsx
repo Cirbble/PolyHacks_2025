@@ -36,6 +36,7 @@ function App() {
             <div style={{ 
               paddingTop: '170px',
               minHeight: 'calc(100vh - 70px)',
+              display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-start',
               alignItems: 'center',
@@ -54,34 +55,27 @@ function App() {
               <h1 style={{
                 fontSize: '2.5rem',
                 color: '#FDFBD4',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                textAlign: 'center'
               }}>
                 Marine Life Tracker
               </h1>
               
-              
-              
-              <div className="content">
-  <div className="content__container">
-    <p className="content__container__text">
-      We help
-    </p>
-    
-    <ul className="content__container__list">
-      <li className="content__container__list__item">the fish !</li>
-      <li className="content__container__list__item">the plants !</li>
-      <li className="content__container__list__item">the ecosystems !</li>
-      <li className="content__container__list__item">everybody !</li>
-    </ul>
-  </div>
-</div>
-
-
+              <div className="content" style={{ textAlign: 'center' }}>
+                <div className="content__container">
+                  <p className="content__container__text">
+                    We help
+                  </p>
+                  
+                  <ul className="content__container__list">
+                    <li className="content__container__list__item">the fish !</li>
+                    <li className="content__container__list__item">the plants !</li>
+                    <li className="content__container__list__item">the ecosystems !</li>
+                    <li className="content__container__list__item">everybody !</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            
-
-
-            
           } />
           <Route path="/data" element={<DataPage />} />
           <Route path="/credit" element={<CreditPage />} />

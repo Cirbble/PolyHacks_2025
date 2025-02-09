@@ -96,8 +96,8 @@ const DataPage = () => {
       sx={{
         width: '100vw',
         minHeight: '100vh',
-        paddingTop: '64px',
-        backgroundColor: '#935341',
+        paddingTop: '170px',
+        paddingBottom: '2rem',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -155,10 +155,9 @@ const DataPage = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 4,
-          margin: '0 auto',
-          '&::-webkit-scrollbar': { display: 'none' },
-          msOverflowStyle: 'none',
-          scrollbarWidth: 'none',
+          position: 'relative',
+          zIndex: 1,
+          
         }}
       >
         <Paper 
