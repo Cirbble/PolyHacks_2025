@@ -63,8 +63,18 @@ const DataPage = () => {
   const [plotData, setPlotData] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
-  // For now, just one species
-  const speciesList = ['Disporella hispida'];
+  // Updated species list with 9 total species
+  const speciesList = [
+    'Disporella hispida',          // Lace coral
+    'Mustela nigripes',            // Black-footed ferret
+    'Panthera tigris',             // Tiger
+    'Diceros bicornis',            // Black rhinoceros
+    'Gorilla beringei',            // Mountain gorilla
+    'Panthera uncia',              // Snow leopard
+    'Phocoena sinus',              // Vaquita porpoise
+    'Gymnogyps californianus',      // California condor
+    'Ailuropoda melanoleuca'       // Giant panda
+  ];
 
   const analyzeWithGemini = async (imageBase64: string) => {
     const genAI = new GoogleGenerativeAI('AIzaSyAY-_EpdlXExMzZW1iGqqQRqHPVlaWEwaQ'); // Replace with your actual API key
