@@ -5,6 +5,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import TopBar from './components/TopBar'
 import DataPage from './pages/DataPage'
+import CreditPage from './pages/CreditPage'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -39,6 +40,7 @@ function App() {
             </div>
           } />
           <Route path="/data" element={<DataPage />} />
+          <Route path="/credit" element={<CreditPage />} />
         </Routes>
       </div>
     </Router>

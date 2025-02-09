@@ -5,21 +5,24 @@ const TopBar = () => {
 
   const buttonStyle = {
     backgroundColor: 'white',
-    color: '#76B6C4',
-    padding: '8px 16px',
-    borderRadius: '8px',
+    color: '#3892C6',
+    padding: '6px 12px',
+    borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     fontWeight: 'bold',
-    margin: '0 8px'
+    fontSize: '14px',
+    margin: '0 2px',
+    minWidth: 'fit-content',
+    whiteSpace: 'nowrap'
   };
 
   return (
     <div style={{
       backgroundColor: '#3892C6',
       width: '100%',
-      height: '60px',
+      height: '70px',
       position: 'fixed',
       top: 0,
       left: 0,
@@ -28,12 +31,24 @@ const TopBar = () => {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '0 20px'
+      padding: '0 16px',
+      boxSizing: 'border-box'
     }}>
-      <h1 style={{ color: 'white', fontSize: '20px', fontWeight: 'bold' }}>
+      <h1 style={{ 
+        color: 'white', 
+        fontSize: '20px',
+        fontWeight: 'bold',
+        marginRight: '12px',
+        whiteSpace: 'nowrap'
+      }}>
         Marine Life Tracker
       </h1>
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: '4px',
+        marginRight: '0',
+        flexShrink: 0
+      }}>
         <button 
           onClick={() => navigate('/map')}
           style={buttonStyle}
@@ -48,7 +63,7 @@ const TopBar = () => {
           onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
           onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
         >
-          View Data
+          Data
         </button>
         <button 
           onClick={() => navigate('/credit')}
