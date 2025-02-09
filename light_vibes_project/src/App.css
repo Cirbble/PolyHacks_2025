@@ -1,8 +1,134 @@
+/* Reset existing styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #8B4513 0%, #654321 50%, #8B4513 100%);
+}
+
+.app-container {
+  min-height: 100vh;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wave-container {
+  position: fixed;
+  top: 70px; /* Account for TopBar height */
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  width: 100%;
+  height: 100px;
+  background: url('wave.svg');
+  background-size: 1000px 100px;
+  animation: wave 10s linear infinite;
+}
+
+.wave:nth-child(2) {
+  top: 10px;
+  opacity: 0.5;
+  animation: wave 8s linear infinite;
+}
+
+.wave:nth-child(3) {
+  top: 20px;
+  opacity: 0.3;
+  animation: wave 6s linear infinite;
+}
+
+@keyframes wave {
+  0% {
+    background-position-x: 0;
+  }
+  100% {
+    background-position-x: 1000px;
+  }
+}
+
+.main-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 170px;
+  width: 100%;
+  max-width: 1200px;
+  gap: 2rem;
+}
+
+.logo-container {
+  width: 200px;
+  height: 200px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.logo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.title {
+  color: #FFE4C4;
+  font-size: 48px;
+  font-weight: bold;
   text-align: center;
+  animation: fadeIn 2s ease-in;
+}
+
+.content {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 40px;
+  overflow: hidden;
+  font-family: 'Lato', sans-serif;
+  font-size: 35px;
+  color: #FDFBD4;
+  background: linear-gradient(to right bottom, rgba(147, 83, 65, 0.9), rgba(139, 69, 19, 0.7));
+  backdrop-filter: blur(10px);
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .logo {
@@ -100,71 +226,52 @@
   }
 }
 
-
-/* The waves are above      //   Scrolling text animation below   */
-.content {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  height: 160px;
-  overflow: hidden;
-  font-family: 'Lato', sans-serif;
-  font-size: 35px;
-  line-height: 40px;
-  color: #FDFBD4;
-  text-align: center;
-  z-index: 1;
-  background-color: #935341;
-  padding: 20px 0;
-}
-
 .content__container {
-  font-weight: 600;
-  overflow: hidden;
-  height: 40px;
   position: relative;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1;
+  height: 40px;
+  padding-bottom: 3px; /* Increased from 3px to raise "We help" more */
 }
 
 .content__container__text {
   display: inline-block;
-  margin: 0;
-  padding-right: 10px;
+  margin-right: 8px;
+  transform: translateY(-10px); /* Additional lift for "We help" */
 }
 
 .content__container__list {
   margin: 0;
-  display: inline-block;
   padding: 0;
   list-style: none;
-  animation: change 12s ease-in-out infinite;
+  position: relative;
+  animation: moveUp 8s ease-in-out infinite;
+  transform: translateY(0);
 }
 
 .content__container__list__item {
+  height: 40px;
   line-height: 40px;
   margin: 0;
-  height: 40px;
   display: block;
+  white-space: nowrap;
 }
 
-@keyframes change {
-  0%, 15% {
-    transform: translateY(60px);
+@keyframes moveUp {
+  0% {
+    transform: translateY(0);  /* "the animals" */
   }
-  20%, 40% {
-    transform: translateY(20px);
+  25% {
+    transform: translateY(-40px);  /* "the plants" */
   }
-  45%, 65% {
-    transform: translateY(-20px);
+  50% {
+    transform: translateY(-80px);  /* "the ecosystems" */
   }
-  70%, 90% {
-    transform: translateY(-60px);
+  75% {
+    transform: translateY(-120px);  /* "everybody" */
   }
-  95%, 100% {
-    transform: translateY(60px);
+  100% {
+    transform: translateY(-160px);  /* back to "the animals" */
   }
 }
 
