@@ -3,7 +3,7 @@ const DataPage = () => {
     <div style={{
       padding: '90px 20px 20px',
       maxWidth: '800px',
-      margin: '0 auto'
+      margin: 'auto'
     }}>
       
       <h1 style={{color:'#F5F3CD'}}>Marine Species Data</h1>

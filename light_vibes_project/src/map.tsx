@@ -305,6 +305,7 @@ const BiodiversityMap = () => {
   }, [yearControl.progress, yearControl.selectedYear, years, isManuallyEditing]);
 
   return (
+    
     <div className="map-page">
       <div style={{ 
         width: '100vw',
@@ -312,7 +313,7 @@ const BiodiversityMap = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#935341'
       }}>
         <TopBar />
 
@@ -610,6 +611,7 @@ const BiodiversityMap = () => {
         </Box>
       </div>
     </div>
+    
   );
 };
 
