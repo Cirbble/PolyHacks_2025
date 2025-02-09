@@ -53,14 +53,17 @@ const TopBar = () => {
           onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
         />
         <h1 style={{ 
-          color: 'white', 
-          fontSize: '20px', 
+          color: '#FFE4C4',
+          fontFamily: "'Quicksand', sans-serif",
+          fontSize: '24px', 
           fontWeight: 'bold',
           marginRight: '12px',
           whiteSpace: 'nowrap',
-          transition: 'opacity 0.2s'
+          transition: 'all 0.3s ease',
+          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)',
+          animation: 'titleFloat 3s ease-in-out infinite'
         }}>
-          Marine Life Tracker
+          Qwerest
         </h1>
       </div>
       <div style={{ 

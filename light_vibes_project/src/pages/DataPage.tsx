@@ -405,6 +405,10 @@ const DataPage = () => {
           )}
         </Paper>
       </Box>
+
+      <div className="help-text">
+        We help the animals !
+      </div>
     </Box>
   );
 };

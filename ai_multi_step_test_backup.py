@@ -21,11 +21,12 @@ n_steps = 6  # Example: predict 3 seasons ahead
 
 # somehow we get data
 # data; 4 columns, speciesName, monthlySightings, monthIndex, className
-data = pd.read_csv("marine_species_data.csv")
+data = pd.read_csv("terrestrial_species_data.csv")
+
 
 # fitting the species data to be normalized 
-total_sightings_per_month = data.groupby('monthIndex')['monthlySightings'].transform('sum')
-data['monthlySightings'] = data['monthlySightings']/total_sightings_per_month
+total_sightings_per_month = data.groupby('monthlyIndex')['sightings'].transform('sum')
+data['sSightings'] = data['sightings']/total_sightings_per_month
 
 # getting the month indexes we want via the desired starting years
 

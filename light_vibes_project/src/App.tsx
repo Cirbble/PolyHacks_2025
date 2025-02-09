@@ -38,7 +38,24 @@ function App() {
                   <img src={waveIcon} alt="Wave Icon" />
                 </div>
                 
-                <h1 className="title">Marine Life Tracker</h1>
+                <h1 className="title">Qwerest</h1>
+                <h2 className="subtitle" style={{
+                  color: '#F5F3CD',
+                  fontSize: '36px',
+                  padding: '15px 40px',
+                  background: 'rgba(40, 102, 63, 0.8)',
+                  borderRadius: '15px',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                  border: '2px solid #F5F3CD',
+                  textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+                  margin: '20px 0',
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 'bold',
+                  letterSpacing: '1px',
+                  transform: 'translateY(-10px)',
+                }}>
+                  Query the forest
+                </h2>
                 
                 <div className="content">
                   <div className="content__container">
