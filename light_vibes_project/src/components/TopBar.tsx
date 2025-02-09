@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import waveIcon from '../assets/wave_icon.png';
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -34,15 +35,34 @@ const TopBar = () => {
       padding: '0 16px',
       boxSizing: 'border-box'
     }}>
-      <h1 style={{ 
-        color: 'white', 
-        fontSize: '20px',
-        fontWeight: 'bold',
-        marginRight: '12px',
-        whiteSpace: 'nowrap'
-      }}>
-        Marine Life Tracker
-      </h1>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+      }} onClick={() => navigate('/')}>
+        <img 
+          src={waveIcon} 
+          alt="Wave Icon" 
+          style={{
+            height: '30px',
+            width: '30px',
+            marginRight: '8px',
+            transition: 'opacity 0.2s'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+        />
+        <h1 style={{ 
+          color: 'white', 
+          fontSize: '20px', 
+          fontWeight: 'bold',
+          marginRight: '12px',
+          whiteSpace: 'nowrap',
+          transition: 'opacity 0.2s'
+        }}>
+          Marine Life Tracker
+        </h1>
+      </div>
       <div style={{ 
         display: 'flex', 
         gap: '4px',
