@@ -6,6 +6,7 @@ import './App.css'
 import TopBar from './components/TopBar'
 import DataPage from './pages/DataPage'
 import CreditPage from './pages/CreditPage'
+import BiodiversityMap from './map'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -41,6 +42,7 @@ function App() {
           } />
           <Route path="/data" element={<DataPage />} />
           <Route path="/credit" element={<CreditPage />} />
+          <Route path="/map" element={<BiodiversityMap />} />
         </Routes>
       </div>
     </Router>
