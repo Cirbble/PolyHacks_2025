@@ -50,7 +50,7 @@
   overflow: hidden;
   line-height: 0;
   transform: rotate(180deg);
-  z-index: -1;
+  z-index: 0;
 }
 
 .onde {
@@ -113,6 +113,9 @@
   line-height: 40px;
   color: #FDFBD4;
   text-align: center;
+  z-index: 1;
+  background-color: #935341;
+  padding: 20px 0;
 }
 
 .content__container {
@@ -123,6 +126,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1;
 }
 
 .content__container__text {

@@ -63,8 +63,7 @@ const DataPage = () => {
       sx={{
         width: '100%',
         minHeight: '100vh',
-        backgroundColor: '#935341',
-        paddingTop: '90px',
+        paddingTop: '170px',
         paddingBottom: '2rem',
         display: 'flex',
         flexDirection: 'column',
@@ -87,7 +86,8 @@ const DataPage = () => {
           alignItems: 'center',
           gap: 4,
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          
         }}
       >
         <Typography 
