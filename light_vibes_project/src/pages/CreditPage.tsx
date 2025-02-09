@@ -1,24 +1,31 @@
 const CreditPage = () => {
   return (
+    
     <div style={{
       minHeight: '100vh',
-      
+
       display: 'flex',
-      justifyContent: 'center'
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      paddingTop: '170px'
     }}>
       <div style={{
-        padding: '90px 20px 20px',
         width: '95%',
         maxWidth: '800px',
-        margin: '0 auto'
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        position: 'absolute',
+        top: '50%',
+        transform: 'translateY(-50%)'
       }}>
         <h1 style={{
-          fontSize: '24px',
+          fontSize: '32px',
           fontWeight: 'bold',
-          marginBottom: '24px',
           color: '#FDFBD4',
-          borderRadius: '8px',
-          borderColor: 'black'
+          textAlign: 'center',
+          marginBottom: '20px'
         }}>
           Credits
         </h1>
@@ -28,7 +35,8 @@ const CreditPage = () => {
           borderRadius: '8px',
           padding: '24px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          textAlign: 'center'
         }}>
           <h2 style={{
             color:'#FDFBD4',
@@ -59,7 +67,8 @@ const CreditPage = () => {
           backgroundColor: '#68392E',
           borderRadius: '8px',
           padding: '24px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          textAlign: 'center'
         }}>
           <h2 style={{
             color:'#FDFBD4',
