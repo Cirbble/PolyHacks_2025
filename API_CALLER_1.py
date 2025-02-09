@@ -4,7 +4,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import csv
 
-def search_marine_species(limit=100000000000):
+def search_marine_species(limit=10000000000000):
     """
     Search for marine species using GBIF API
     """
@@ -265,7 +265,7 @@ def main():
         writer.writerow(['speciesName', 'monthlySightings', 'monthlyIndex'])
 
     print("Searching for marine species...")
-    species_results = search_marine_species(limit=10000000)
+    species_results = search_marine_species(limit=1000000000)
     
     if species_results:
         marine_species_data = {}
