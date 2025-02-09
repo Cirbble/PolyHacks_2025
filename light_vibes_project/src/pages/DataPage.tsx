@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { Autocomplete, TextField, Button, Box, Typography, Container, Paper } from '@mui/material';
+import { Autocomplete, TextField, Button, Box, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 
 interface PredictionParams {
   species_name: string;
   n_steps: number;
   prediction_amount: number;
+}
+
+interface PredictionResponse {
+  success: boolean;
+  plot?: string;
+  error?: string;
 }
 
 const DataPage = () => {
@@ -36,9 +42,9 @@ const DataPage = () => {
         prediction_amount: parseInt(predictionAmount)
       };
 
-      const response = await axios.post('http://localhost:5000/predict', params);
+      const response = await axios.post<PredictionResponse>('http://localhost:5000/predict', params);
       
-      if (response.data.success) {
+      if (response.data.success && response.data.plot) {
         setPlotData(response.data.plot);
       } else {
         setError('Failed to generate prediction');
@@ -267,7 +273,8 @@ const DataPage = () => {
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '2rem',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            position: 'relative'
           }}
         >
           {plotData ? (
@@ -282,11 +289,9 @@ const DataPage = () => {
             />
           ) : (
             <Box sx={{ 
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100%'
+              position: 'relative',
+              width: '100%',
+              textAlign: 'center'
             }}>
               <Typography sx={{ 
                 color: '#F5F3CD',
