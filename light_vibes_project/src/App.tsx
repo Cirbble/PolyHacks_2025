@@ -59,7 +59,30 @@ function App() {
               }}>
                 Marine Life Tracker
               </h1>
+              
+              
+              
+              <div className="content">
+  <div className="content__container">
+    <p className="content__container__text">
+      We help
+    </p>
+    
+    <ul className="content__container__list">
+      <li className="content__container__list__item">the fish !</li>
+      <li className="content__container__list__item">the plants !</li>
+      <li className="content__container__list__item">the ecosystems !</li>
+      <li className="content__container__list__item">everybody !</li>
+    </ul>
+  </div>
+</div>
+
+
             </div>
+            
+
+
+            
           } />
           <Route path="/data" element={<DataPage />} />
           <Route path="/credit" element={<CreditPage />} />
