@@ -5,7 +5,7 @@ const TopBar = () => {
 
   return (
     <div style={{
-      backgroundColor: '#76B6C4',
+      backgroundColor: '#3892C6',
       width: '100%',
       height: '60px',
       position: 'fixed',
