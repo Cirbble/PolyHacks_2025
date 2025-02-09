@@ -82,12 +82,12 @@ const BiodiversityMap = () => {
     (_, i) => (1980 + i).toString()
   );
   const [yearControl, setYearControl] = useState<YearControl>({
-    selectedYear: years[0],
+    selectedYear: 'all',
     isPlaying: false,
     playbackSpeed: 1000,
     progress: 0
   });
-  const [yearInput, setYearInput] = useState(years[Math.floor(yearControl.progress)]);
+  const [yearInput, setYearInput] = useState('All');
   const [isManuallyEditing, setIsManuallyEditing] = useState(false);
   const [selectedSpeciesKey, setSelectedSpeciesKey] = useState<string | null>(null);
 
@@ -152,20 +152,54 @@ const BiodiversityMap = () => {
         taxonKey: speciesKey,
         hasCoordinate: true,
         hasGeospatialIssue: false,
-        limit: 300,
       };
 
-      if (year && year !== 'all') {
-        params.year = year;
-      }
-
-      const response = await axios.get<GBIFOccurrenceResponse>(
+      // First, get the total count
+      const countResponse = await axios.get<GBIFOccurrenceCountResponse>(
         'https://api.gbif.org/v1/occurrence/search',
-        { params }
+        { 
+          params: {
+            ...params,
+            limit: 0,
+            year: year !== 'all' ? year : undefined
+          }
+        }
       );
 
+      const totalCount = countResponse.data.count;
+      const maxRecords = Math.min(totalCount, year === 'all' ? 10000 : 1000); // Increased for all years
+      const batchSize = 1000; // Increased batch size for efficiency
+
+      let allResults: GBIFOccurrenceResponse['results'] = [];
+      let offset = 0;
+
+      setLoadingStatus(`Loading ${maxRecords} records...`);
+
+      while (allResults.length < maxRecords) {
+        const batchParams = {
+          ...params,
+          limit: Math.min(batchSize, maxRecords - allResults.length),
+          offset,
+          year: year !== 'all' ? year : undefined
+        };
+
+        const response = await axios.get<GBIFOccurrenceResponse>(
+          'https://api.gbif.org/v1/occurrence/search',
+          { params: batchParams }
+        );
+
+        if (response.data.results.length === 0) break;
+
+        allResults = [...allResults, ...response.data.results];
+        offset += response.data.results.length;
+
+        // Update loading status to show percentage
+        const percentage = Math.round((allResults.length / maxRecords) * 100);
+        setLoadingStatus(`Loading... ${percentage}%`);
+      }
+
       const uniqueLocations = new Map();
-      response.data.results.forEach((occurrence) => {
+      allResults.forEach((occurrence) => {
         const key = `${occurrence.decimalLatitude}-${occurrence.decimalLongitude}`;
         if (!uniqueLocations.has(key)) {
           uniqueLocations.set(key, {
@@ -183,10 +217,10 @@ const BiodiversityMap = () => {
 
       const uniqueOccurrences = Array.from(uniqueLocations.values());
       
-      // Update loading status based on year mode
+      // Final status message with unique locations and total available
       const statusMessage = year && year !== 'all' 
-        ? `Found ${uniqueOccurrences.length} locations in ${year}`
-        : `Found ${uniqueOccurrences.length} total locations`;
+        ? `Found ${uniqueOccurrences.length} unique locations in ${year} (from ${totalCount} total records)`
+        : `Found ${uniqueOccurrences.length} unique locations (from ${totalCount} total records)`;
       
       setOccurrences(uniqueOccurrences);
       setLoadingStatus(statusMessage);
@@ -207,6 +241,25 @@ const BiodiversityMap = () => {
       // If starting playback and at the end, reset to beginning
       progress: prev.progress >= years.length - 1 ? 0 : prev.progress
     }));
+  };
+
+  const handleAllYearsClick = async () => {
+    if (yearControl.isPlaying) {
+      setYearControl(prev => ({ ...prev, isPlaying: false }));
+    }
+    
+    setYearControl(prev => ({ ...prev, selectedYear: 'all' }));
+    setYearInput('All');
+    
+    if (selectedSpeciesKey) {
+      try {
+        setLoadingStatus('Loading data for all years...');
+        await fetchOccurrences(selectedSpeciesKey, 'all');
+      } catch (error) {
+        console.error('Error loading all years:', error);
+        setLoadingStatus('Error loading data');
+      }
+    }
   };
 
   useEffect(() => {
@@ -247,9 +300,9 @@ const BiodiversityMap = () => {
   useEffect(() => {
     // Only update yearInput from slider if we're not manually editing
     if (!isManuallyEditing) {
-      setYearInput(years[Math.floor(yearControl.progress)]);
+      setYearInput(yearControl.selectedYear === 'all' ? 'All' : years[Math.floor(yearControl.progress)]);
     }
-  }, [yearControl.progress, years, isManuallyEditing]);
+  }, [yearControl.progress, yearControl.selectedYear, years, isManuallyEditing]);
 
   return (
     <div style={{ 
@@ -300,16 +353,14 @@ const BiodiversityMap = () => {
               onChange={(_, newValue) => {
                 if (newValue?.key) {
                   setSelectedSpeciesKey(newValue.key);
-                  // Mark this species as selected and unmark others
                   setOptions(prev => prev.map(opt => ({
                     ...opt,
                     selected: opt.key === newValue.key
                   })));
-                  // Fetch occurrences for the current year
-                  fetchOccurrences(newValue.key, yearControl.selectedYear);
+                  // Fetch all years data by default
+                  fetchOccurrences(newValue.key, 'all');
                 } else {
                   setSelectedSpeciesKey(null);
-                  // Clear selected state when no species is selected
                   setOptions(prev => prev.map(opt => ({
                     ...opt,
                     selected: false
@@ -434,31 +485,15 @@ const BiodiversityMap = () => {
             }}
           >
             <button
-              onClick={() => {
-                if (yearControl.isPlaying) {
-                  setYearControl(prev => ({ ...prev, isPlaying: false }));
-                }
-                
-                if (selectedSpeciesKey) {
-                  setLoading(true);
-                  setLoadingStatus('Loading data for all years...');
-                  fetchOccurrences(selectedSpeciesKey, 'all')
-                    .then(() => setLoading(false))
-                    .catch(() => {
-                      setLoading(false);
-                      setLoadingStatus('Error loading data');
-                    });
-                }
-              }}
+              onClick={handleAllYearsClick}
               style={{
                 backgroundColor: '#3892C6',
                 color: 'white',
-                padding: '6px 12px',
-                borderRadius: '6px',
+                padding: '8px 16px',
+                borderRadius: '4px',
                 border: 'none',
                 cursor: 'pointer',
-                marginRight: '8px',
-                fontSize: '14px'
+                fontWeight: 'bold'
               }}
             >
               All Years
