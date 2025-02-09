@@ -308,23 +308,26 @@ const BiodiversityMap = () => {
     
     <div className="map-page">
       <div style={{ 
+        paddingTop: '100px',
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#935341'
+        alignItems: 'center'
       }}>
         <TopBar />
 
         <Box sx={{
-          width: '100%',
+          width: '95%',
+          maxWidth: '1400px',
           height: 'calc(100vh - 70px)',
           mt: '70px',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          padding: '16px'
+          padding: '16px',
+          margin: '0 auto'
         }}>
           {/* Search Container */}
           <Box sx={{
@@ -333,6 +336,7 @@ const BiodiversityMap = () => {
             backgroundColor: 'white',
             display: 'flex',
             justifyContent: 'center',
+            alignItems: 'center',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             borderRadius: '8px',
             zIndex: 2,
