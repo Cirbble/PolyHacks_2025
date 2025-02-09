@@ -9,7 +9,9 @@ const CreditPage = () => {
         fontSize: '24px',
         fontWeight: 'bold',
         marginBottom: '24px',
-        color: '#3892C6'
+        color: '#384BC7',
+        borderRadius:'8px',
+        borderColor:'black'
       }}>
         Credits
       </h1>
@@ -22,13 +24,14 @@ const CreditPage = () => {
         marginBottom: '20px'
       }}>
         <h2 style={{
+          color:'#3892C6',
           fontSize: '20px',
           fontWeight: 'bold',
           marginBottom: '16px'
         }}>
           Data Source
         </h2>
-        <p style={{ marginBottom: '16px' }}>
+        <p style={{ marginBottom: '16px', color:'#3892C6' }}>
           Global Biodiversity Information Facility (GBIF) - An international network and data infrastructure providing open access to data about all types of life on Earth.
         </p>
         <a 
@@ -52,13 +55,14 @@ const CreditPage = () => {
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
         <h2 style={{
+          color:'#3892C6',
           fontSize: '20px',
           fontWeight: 'bold',
           marginBottom: '16px'
         }}>
           Development Assistant
         </h2>
-        <p style={{ marginBottom: '16px' }}>
+        <p style={{ marginBottom: '16px' , color:"#3892C6"}}>
           Claude AI (Anthropic) - An AI assistant that helped with code development, debugging, and implementation of various features in this project.
         </p>
         <a 
