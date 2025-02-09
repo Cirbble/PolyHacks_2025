@@ -1,9 +1,10 @@
 import pandas as pd
+import math
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as keras
 import matplotlib.pyplot as plt
@@ -11,13 +12,17 @@ from scipy.interpolate import interp1d
 
 print("making ai rn")
 # global variables we could want to change
-sequence_length = 12 # months
+sequence_length = 6  # time index (seasons)
 
 
 
 # somehow we get data
 # data; 4 columns, speciesName, monthlySightings, monthIndex, className
 data = pd.read_csv("marine_species_data.csv")
+
+# fitting the species data to be normalized 
+total_sightings_per_month = data.groupby('monthIndex')['monthlySightings'].transform('sum')
+data['monthlySightings'] = data['monthlySightings']/total_sightings_per_month
 
 # getting the month indexes we want via the desired starting years
 
@@ -61,17 +66,44 @@ print(training_end)
 print(validation_end)
 print(test_end)
 
-training_data = data.iloc[0: training_end]
-validation_data = data.iloc[training_end + 1: validation_end]
-test_data = data.iloc[validation_end + 1: test_end]
+            
+def get_season(monthIndex):
+    monthIndex = monthIndex
+    if monthIndex % 12 in [0, 1, 11]: # Dec, Jan, Feb (Winter if starting from Jan as 0, Dec as 11)
+        return 0 + 4*math.floor(monthIndex/12)
+    elif monthIndex % 12 in [2, 3, 4]: # Mar, Apr, May
+        return 1 + 4*math.floor(monthIndex/12)
+    elif monthIndex % 12 in [5, 6, 7]: # Jun, Jul, Aug
+        return 2 + 4*math.floor(monthIndex/12)
+    elif monthIndex % 12 in [8, 9, 10]: # Sep, Oct, Nov
+        return 3 + 4*math.floor(monthIndex/12)
 
+
+def months_to_seasons(data):
+    data['seasonIndex'] = data['monthIndex'].apply(get_season)
+    seasonal_sightings = data.groupby(['seasonIndex', 'speciesName'])['monthlySightings'].sum().reset_index() # Calculate seasonal sightings
+
+    # Normalize to total sightings per seasonIndex
+    total_sightings_per_season = seasonal_sightings.groupby('seasonIndex')['monthlySightings'].transform('sum') # Calculate total per season
+    seasonal_sightings['normalizedSightings'] = seasonal_sightings['monthlySightings'] / total_sightings_per_season # Normalize
+
+    seasonal_sightings.rename(columns={'normalizedSightings': 'Sightings'}, inplace=True)
+    return seasonal_sightings[['Sightings', 'seasonIndex', 'speciesName']] 
+
+    
+
+data = months_to_seasons(data) 
+data.to_csv('test_data.csv', index = False)
+training_data = data.iloc[0: round(training_end/4)]
+validation_data = data.iloc[round(training_end/4 + 0.25): round(validation_end/4)]
+test_data = data.iloc[round(validation_end/4 + 0.25): round(test_end/4)]
 
 # shaping the data
 
-train_sightings = training_data['monthlySightings'].values.reshape(-1, 1)
-validation_sightings = validation_data['monthlySightings'].values.reshape(-1, 1)
-test_sightings = test_data['monthlySightings'].values.reshape(-1, 1)
-all_sightings = data['monthlySightings'].values.reshape(-1, 1)
+train_sightings = training_data['Sightings'].values.reshape(-1, 1)
+validation_sightings = validation_data['Sightings'].values.reshape(-1, 1)
+test_sightings = test_data['Sightings'].values.reshape(-1, 1)
+all_sightings = data['Sightings'].values.reshape(-1, 1)
 
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaler = scaler.fit(all_sightings) 
@@ -133,9 +165,16 @@ def negative_binomial_nll(y_true, y_pred):
     return -keras.mean(log_likelihood) # Negative log-likelihood, we want to minimize this
 
 
-# 5. Build LSTM Model
+# lstm
 model = Sequential()
-model.add(LSTM(50, input_shape=(X_train.shape[1], X_train.shape[2]))) # Single LSTM layer with 50 units
+# 1st lstm layer 
+model.add(LSTM(100, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences = True)) # Single LSTM layer with 50 units
+model.add(Dropout(0.2))
+# 2nd
+# model.add(LSTM(50, return_sequences = True))
+# model.add(Dropout(0.2))
+# 3rd
+model.add(LSTM(100))
 model.add(Dense(2, activation='exponential')) # Output layer with 2 neurons (mu, alpha), exponential activation to ensure positive outputs
 
 # 6. Compile Model
@@ -144,8 +183,8 @@ model.compile(optimizer=optimizer, loss=negative_binomial_nll) # Use custom NLL 
 
 
 # 7. Model Training
-epochs = 50 # Adjust as needed
-batch_size = 32 # Adjust as needed
+epochs = 100 # Adjust as needed
+batch_size = 8 # Adjust as needed
 
 history = model.fit(X_train, y_train,
                     epochs=epochs,
@@ -163,8 +202,6 @@ predicted_mu_scaled = predictions_scaled[:, 0].reshape(-1, 1)
 predicted_sightings = scaler.inverse_transform(predicted_mu_scaled)
 actual_sightings = scaler.inverse_transform(y_test)  # Inverse transform actual test values for comparison
 
-
-# 9. Evaluate Metrics
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 mae = mean_absolute_error(actual_sightings, predicted_sightings)
@@ -173,74 +210,48 @@ rmse = np.sqrt(mean_squared_error(actual_sightings, predicted_sightings))
 print(f'Test Mean Absolute Error (MAE): {mae:.2f}')
 print(f'Test Root Mean Squared Error (RMSE): {rmse:.2f}')
 
-plagioecia_data = data[data['speciesName'] == 'Plagioecia patina']
+## testing prediction
+species_name = 'Plagioecia patina'
+species_data = data[data['speciesName'] == species_name]
+start_index = (2021 - 1980)*4 # winter 2020-2021
+amount_of_predictions = 100
 
-# 1. Get the 12 most recent data points *before* Jan 2021
-jan_2021_index = (2021 - 1980) * 12  # Assuming data starts from Jan 1980
+data_before_date = species_data[species_data['seasonIndex'] < start_index] 
 
-# Check if jan_2021_index exists for the species
-if jan_2021_index not in plagioecia_data['monthIndex'].values:
-    print("January 2021 data not found for Plagioecia patina.")
-    exit()
-
-# Filter data before Jan 2021
-data_before_jan2021 = plagioecia_data[plagioecia_data['monthIndex'] < jan_2021_index]
-
-# Get the last 12 entries (most recent)
-if len(data_before_jan2021) < 12:
-    print("Not enough data points to predict.")
-    exit()
-
-last_12_months_data = data_before_jan2021.tail(12)['monthlySightings'].values.reshape(-1, 1)
+predicted = []
+last_seq_data = data_before_date.tail(sequence_length)['Sightings'].values.reshape(-1, 1)
+last_seq_scaled = scaler.transform(last_seq_data)
 
 
-# 2. Scale the input data (same as before)
-last_12_months_scaled = scaler.transform(last_12_months_data)
+for i in range(amount_of_predictions):
+    
+    X_predict = np.reshape(last_seq_scaled, (1, sequence_length, 1))
+    predicted_scaled = model.predict(X_predict)
+    predicted_mu_scaled = predicted_scaled[:, 0].reshape(-1, 1)
+    predicted_inverse_transformed =  scaler.inverse_transform(predicted_mu_scaled)
+    predicted.append(scaler.inverse_transform(predicted_mu_scaled))
+    last_seq_scaled = last_seq_scaled[1:]
+    last_seq_scaled = np.vstack([last_seq_scaled, predicted_inverse_transformed])
+    #last_seq_scaled = np.vstack([predicted_inverse_transformed, last_seq_scaled])
 
-# 3. Reshape for LSTM (same as before)
-X_predict = np.reshape(last_12_months_scaled, (1, sequence_length, 1))
-
-# 4. Make the prediction (same as before)
-predicted_jan_2021_scaled = model.predict(X_predict)
-
-# 5. Extract mu and Inverse transform (same as before)
-predicted_jan_2021_mu_scaled = predicted_jan_2021_scaled[:, 0].reshape(-1, 1)
-predicted_jan_2021 = scaler.inverse_transform(predicted_jan_2021_mu_scaled)
-
-print(f"Predicted Plagioecia patina sightings for January 2021: {predicted_jan_2021[0, 0]:.2f}")
-
-
-actual_jan_2021 = plagioecia_data[plagioecia_data['monthIndex'] == jan_2021_index]['monthlySightings'].values
-
-if actual_jan_2021 > -1:  # Check if data exists
-    actual_jan_2021 = actual_jan_2021[0]  # Extract the value (it's in a NumPy array)
-    print(f"Actual Plagioecia patina sightings for January 2021: {actual_jan_2021}")
-
-    # Calculate and print the error
-    error = abs(predicted_jan_2021[0, 0] - actual_jan_2021)
-    percentage_error = (error / actual_jan_2021) * 100 if actual_jan_2021 !=0 else float('inf') # Avoid division by zero
-    print(f"Absolute Error: {error:.2f}")
-    print(f"Percentage Error: {percentage_error:.2f}%")
-else:
-    print("No actual data found for January 2021 for Plagioecia patina.")
-
-# --- Plotting with Actual Value ---
+actual = species_data[species_data['seasonIndex'] == start_index]['Sightings'].values
 plt.figure(figsize=(10, 6))
 
-# Plot the training data (for context) - Optional
-training_data_plagioecia = plagioecia_data[plagioecia_data['monthIndex'] < jan_2021_index - 12]  # Training data
-plt.plot(training_data_plagioecia['monthIndex'], training_data_plagioecia['monthlySightings'], label='Training Data', alpha=0.7)
+# plot training data
+training_data_plagioecia = species_data[species_data['seasonIndex'] < start_index]  
+plt.plot(training_data_plagioecia['seasonIndex'], training_data_plagioecia['Sightings'], label='Training Data', alpha=0.7)
 
-# Plot the actual value for Jan 2021 (if it exists)
-if actual_jan_2021 > -1:
-    plt.scatter(jan_2021_index, actual_jan_2021, color='green', label='Actual Jan 2021', s=100, zorder=2)  # Larger marker
+# plot actual value
+if actual.size > 0:
+    plt.scatter(start_index, actual, color='green', label='Actual', s=100, zorder=2)  
 
-# Plot the prediction
-plt.scatter(jan_2021_index, predicted_jan_2021, color='red', label='Predicted Jan 2021', s=100, zorder=2)  # Larger marker
+# plot the prediction
+for i in range(amount_of_predictions):
+    plt.scatter(start_index + i, predicted[i], color='red', label='Predicted', s=100, zorder=2)  
 
-plt.xlabel('Month Index')  # X-axis is now month index
-plt.ylabel('Monthly Sightings')
-plt.title('Plagioecia patina Sightings Prediction')
+plt.xlabel('Season Index') 
+plt.ylabel('Normalized Sightings')
+plt.title(species_name +' Sightings Prediction')
 plt.legend()
 plt.grid(True)
 plt.show()
