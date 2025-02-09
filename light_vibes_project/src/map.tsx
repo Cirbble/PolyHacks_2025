@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, CircleMarker, Popup, TileLayer } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import axios from 'axios';
-import { Autocomplete, TextField, Box, Typography, CircularProgress, Select, MenuItem, FormControl, InputLabel, Slider } from '@mui/material';
+import { Autocomplete, TextField, Box, Typography, CircularProgress, Slider } from '@mui/material';
 import TopBar from './components/TopBar';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +22,7 @@ interface SpeciesSuggestion {
   scientificName: string;
   vernacularName?: string;
   count: number;
+  selected?: boolean;
 }
 
 // Add these interfaces for API responses
@@ -54,6 +55,7 @@ interface YearControl {
   selectedYear: string;
   isPlaying: boolean;
   playbackSpeed: number;
+  progress: number;
 }
 
 const cleanScientificName = (name: string): string => {
@@ -74,14 +76,20 @@ const BiodiversityMap = () => {
   const [options, setOptions] = useState<SpeciesSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
-  const [selectedYear, setSelectedYear] = useState<string>('all');
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => (currentYear - i).toString());
+  const years = Array.from(
+    { length: currentYear - 1980 + 1 }, 
+    (_, i) => (1980 + i).toString()
+  );
   const [yearControl, setYearControl] = useState<YearControl>({
-    selectedYear: 'all',
+    selectedYear: years[0],
     isPlaying: false,
-    playbackSpeed: 1000 // milliseconds between years
+    playbackSpeed: 1000,
+    progress: 0
   });
+  const [yearInput, setYearInput] = useState(years[Math.floor(yearControl.progress)]);
+  const [isManuallyEditing, setIsManuallyEditing] = useState(false);
+  const [selectedSpeciesKey, setSelectedSpeciesKey] = useState<string | null>(null);
 
   const searchSpecies = async (input: string) => {
     if (!input) {
@@ -137,29 +145,26 @@ const BiodiversityMap = () => {
     }
   };
 
-  const fetchOccurrences = async (speciesKey: string) => {
-    setLoading(true);
-    setLoadingStatus('Fetching occurrences...');
-
+  const fetchOccurrences = useCallback(async (speciesKey: string, year?: string) => {
     try {
+      setLoadingStatus(`Loading data...`);
       const params: any = {
         taxonKey: speciesKey,
         hasCoordinate: true,
         hasGeospatialIssue: false,
-        limit: 300
+        limit: 300,
       };
 
-      // Add year filter if a specific year is selected
-      if (selectedYear !== 'all') {
-        params.year = selectedYear;
+      if (year && year !== 'all') {
+        params.year = year;
       }
 
-      const response = await axios.get<GBIFOccurrenceResponse>('https://api.gbif.org/v1/occurrence/search', {
-        params
-      });
+      const response = await axios.get<GBIFOccurrenceResponse>(
+        'https://api.gbif.org/v1/occurrence/search',
+        { params }
+      );
 
       const uniqueLocations = new Map();
-      
       response.data.results.forEach((occurrence) => {
         const key = `${occurrence.decimalLatitude}-${occurrence.decimalLongitude}`;
         if (!uniqueLocations.has(key)) {
@@ -177,53 +182,74 @@ const BiodiversityMap = () => {
       });
 
       const uniqueOccurrences = Array.from(uniqueLocations.values());
+      
+      // Update loading status based on year mode
+      const statusMessage = year && year !== 'all' 
+        ? `Found ${uniqueOccurrences.length} locations in ${year}`
+        : `Found ${uniqueOccurrences.length} total locations`;
+      
       setOccurrences(uniqueOccurrences);
-      setLoadingStatus(`Found ${uniqueOccurrences.length} locations`);
+      setLoadingStatus(statusMessage);
+      
+      return uniqueOccurrences;
     } catch (error) {
       console.error('Error fetching occurrences:', error);
       setLoadingStatus('Error loading data');
       setOccurrences([]);
-    } finally {
-      setLoading(false);
+      throw error;
     }
-  };
-
-  const handleYearChange = (newYear: string) => {
-    setYearControl(prev => ({ ...prev, selectedYear: newYear }));
-    // Get the currently selected species from the Autocomplete
-    const selectedSpecies = options.find(opt => opt.key === newYear);
-    if (selectedSpecies) {
-      fetchOccurrences(selectedSpecies.key);
-    }
-  };
+  }, []);
 
   const toggleYearPlayback = () => {
-    setYearControl(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+    setYearControl(prev => ({
+      ...prev,
+      isPlaying: !prev.isPlaying,
+      // If starting playback and at the end, reset to beginning
+      progress: prev.progress >= years.length - 1 ? 0 : prev.progress
+    }));
   };
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout;
     
     if (yearControl.isPlaying) {
-      intervalId = setInterval(() => {
+      timeoutId = setTimeout(() => {
         setYearControl(prev => {
-          const currentYearIndex = years.indexOf(prev.selectedYear);
-          if (currentYearIndex === -1 || currentYearIndex === 0) {
-            // If at the end or invalid, start from the most recent year
-            return { ...prev, selectedYear: years[0] };
+          let newProgress = prev.progress + 1;
+          
+          if (newProgress >= years.length - 1) {
+            newProgress = 0;
           }
-          // Move to the next year
-          return { ...prev, selectedYear: years[currentYearIndex - 1] };
+          
+          const newYear = years[Math.floor(newProgress)];
+          
+          // Use the stored selectedSpeciesKey
+          if (selectedSpeciesKey) {
+            fetchOccurrences(selectedSpeciesKey, newYear);
+          }
+          
+          return {
+            ...prev,
+            progress: newProgress,
+            selectedYear: newYear
+          };
         });
       }, yearControl.playbackSpeed);
     }
-
+    
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
-  }, [yearControl.isPlaying, yearControl.playbackSpeed]);
+  }, [yearControl.isPlaying, yearControl.progress, years, selectedSpeciesKey, fetchOccurrences]);
+
+  useEffect(() => {
+    // Only update yearInput from slider if we're not manually editing
+    if (!isManuallyEditing) {
+      setYearInput(years[Math.floor(yearControl.progress)]);
+    }
+  }, [yearControl.progress, years, isManuallyEditing]);
 
   return (
     <div style={{ 
@@ -264,7 +290,7 @@ const BiodiversityMap = () => {
             alignItems: 'center'
           }}>
             <Autocomplete
-              sx={{ flex: 2 }}
+              sx={{ flex: 1 }}
               options={options}
               getOptionLabel={(option) => 
                 `${option.scientificName}${option.vernacularName ? ` (${option.vernacularName})` : ''}`
@@ -273,7 +299,21 @@ const BiodiversityMap = () => {
               onInputChange={(_, newValue) => searchSpecies(newValue)}
               onChange={(_, newValue) => {
                 if (newValue?.key) {
-                  fetchOccurrences(newValue.key);
+                  setSelectedSpeciesKey(newValue.key);
+                  // Mark this species as selected and unmark others
+                  setOptions(prev => prev.map(opt => ({
+                    ...opt,
+                    selected: opt.key === newValue.key
+                  })));
+                  // Fetch occurrences for the current year
+                  fetchOccurrences(newValue.key, yearControl.selectedYear);
+                } else {
+                  setSelectedSpeciesKey(null);
+                  // Clear selected state when no species is selected
+                  setOptions(prev => prev.map(opt => ({
+                    ...opt,
+                    selected: false
+                  })));
                 }
               }}
               loading={loading}
@@ -294,27 +334,6 @@ const BiodiversityMap = () => {
                 />
               )}
             />
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel id="year-select-label">Year</InputLabel>
-              <Select
-                labelId="year-select-label"
-                value={selectedYear}
-                label="Year"
-                onChange={(e) => {
-                  setSelectedYear(e.target.value);
-                  // Refetch occurrences with new year if a species is selected
-                  const selectedSpecies = options.find(opt => opt.key === e.target.value);
-                  if (selectedSpecies) {
-                    fetchOccurrences(selectedSpecies.key);
-                  }
-                }}
-              >
-                <MenuItem value="all">All Years</MenuItem>
-                {years.map(year => (
-                  <MenuItem key={year} value={year}>{year}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
             <Typography variant="body2" sx={{ minWidth: 150 }}>
               {loadingStatus}
             </Typography>
@@ -415,6 +434,37 @@ const BiodiversityMap = () => {
             }}
           >
             <button
+              onClick={() => {
+                if (yearControl.isPlaying) {
+                  setYearControl(prev => ({ ...prev, isPlaying: false }));
+                }
+                
+                if (selectedSpeciesKey) {
+                  setLoading(true);
+                  setLoadingStatus('Loading data for all years...');
+                  fetchOccurrences(selectedSpeciesKey, 'all')
+                    .then(() => setLoading(false))
+                    .catch(() => {
+                      setLoading(false);
+                      setLoadingStatus('Error loading data');
+                    });
+                }
+              }}
+              style={{
+                backgroundColor: '#3892C6',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                marginRight: '8px',
+                fontSize: '14px'
+              }}
+            >
+              All Years
+            </button>
+            
+            <button
               onClick={toggleYearPlayback}
               style={{
                 backgroundColor: '#3892C6',
@@ -434,40 +484,95 @@ const BiodiversityMap = () => {
             </button>
             
             <Slider
-              value={yearControl.selectedYear === 'all' ? years.length : years.indexOf(yearControl.selectedYear)}
+              value={yearControl.progress}
               min={0}
-              max={years.length}
-              step={1}
+              max={years.length - 1}
+              step={0.01}
+              disabled={isManuallyEditing}
               onChange={(_, value) => {
-                const yearIndex = typeof value === 'number' ? value : value[0];
-                const selectedYear = yearIndex === years.length ? 'all' : years[yearIndex];
-                handleYearChange(selectedYear);
+                if (!isManuallyEditing) {
+                  const progress = typeof value === 'number' ? value : value[0];
+                  const yearIndex = Math.floor(progress);
+                  const selectedYear = years[yearIndex];
+                  
+                  setYearControl(prev => ({
+                    ...prev,
+                    progress,
+                    selectedYear
+                  }));
+                  
+                  setYearInput(selectedYear);
+
+                  // Use the stored selectedSpeciesKey instead of searching through options
+                  if (selectedSpeciesKey) {
+                    fetchOccurrences(selectedSpeciesKey, selectedYear);
+                  } else {
+                    setLoadingStatus(`Select a species to view data for ${selectedYear}`);
+                  }
+                }
               }}
               sx={{
                 '& .MuiSlider-thumb': {
-                  backgroundColor: '#3892C6',
+                  backgroundColor: isManuallyEditing ? '#ccc' : '#3892C6',
                 },
                 '& .MuiSlider-track': {
-                  backgroundColor: '#3892C6',
+                  backgroundColor: isManuallyEditing ? '#ccc' : '#3892C6',
                 },
                 '& .MuiSlider-rail': {
-                  backgroundColor: '#a8d4eb',
+                  backgroundColor: isManuallyEditing ? '#ddd' : '#a8d4eb',
                 }
               }}
             />
             
             <TextField
               size="small"
-              value={yearControl.selectedYear}
+              value={yearInput}
+              onFocus={(e) => {
+                setIsManuallyEditing(true);
+                e.target.select();
+              }}
               onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'all' || (value.match(/^\d{4}$/) && years.includes(value))) {
-                  handleYearChange(value);
+                if (yearControl.isPlaying) {
+                  setYearControl(prev => ({ ...prev, isPlaying: false }));
                 }
+                
+                const value = e.target.value;
+                if (value === '' || value.match(/^\d{0,4}$/)) {
+                  setYearInput(value);
+                  
+                  if (value.match(/^\d{4}$/) && years.includes(value)) {
+                    const yearIndex = years.indexOf(value);
+                    
+                    setYearControl(prev => ({
+                      ...prev,
+                      progress: yearIndex,
+                      selectedYear: value
+                    }));
+
+                    if (selectedSpeciesKey) {
+                      fetchOccurrences(selectedSpeciesKey, value);
+                    }
+                  }
+                }
+              }}
+              onBlur={() => {
+                // Only reset if the input is invalid
+                if (!yearInput.match(/^\d{4}$/) || !years.includes(yearInput)) {
+                  const currentYear = years[Math.floor(yearControl.progress)];
+                  setYearInput(currentYear);
+                }
+                setIsManuallyEditing(false);
               }}
               sx={{ width: 100 }}
               InputProps={{
-                sx: { backgroundColor: 'white' }
+                sx: { 
+                  backgroundColor: 'white',
+                  '& input': {
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    color: '#3892C6'
+                  }
+                }
               }}
             />
           </Box>
