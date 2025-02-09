@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Autocomplete, TextField, Button, Box, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 import { keyframes } from '@emotion/react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface PredictionParams {
   species_name: string;
@@ -13,6 +14,12 @@ interface PredictionResponse {
   success: boolean;
   plot?: string;
   error?: string;
+}
+
+interface AnalysisResponse {
+  riskScore: string;
+  explanation: string;
+  prevention: string;
 }
 
 const fadeIn = keyframes`
@@ -54,9 +61,58 @@ const DataPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plotData, setPlotData] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
   // For now, just one species
   const speciesList = ['Disporella hispida'];
+
+  const analyzeWithGemini = async (imageBase64: string) => {
+    const genAI = new GoogleGenerativeAI('AIzaSyAY-_EpdlXExMzZW1iGqqQRqHPVlaWEwaQ'); // Replace with your actual API key
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Changed back to pro-vision
+
+    const prompt = `Analyze this graph showing species population data over time. 
+    On the first line, provide a risk score from 1-10 (where 10 is highest risk) indicating how endangered this species might become in the near future based on the trend.
+    On the second line, explain your score.
+    On the third line, suggest specific ways to prevent this species from becoming endangered.
+    Please provide only these three lines without any additional text.`;
+
+    try {
+      // Convert base64 to proper format for Gemini
+      const parts = [
+        {
+          text: prompt
+        },
+        {
+          inlineData: {
+            mimeType: "image/png",
+            data: imageBase64
+          }
+        }
+      ];
+
+      const result = await model.generateContent(parts);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Add console.log to debug the response
+      console.log('Gemini response:', text);
+
+      const [riskScore, explanation, prevention] = text.split('\n').map(line => line.trim());
+
+      if (!riskScore || !explanation || !prevention) {
+        throw new Error('Invalid response format from Gemini');
+      }
+
+      setAnalysis({
+        riskScore,
+        explanation,
+        prevention
+      });
+    } catch (error) {
+      console.error('Gemini analysis error:', error);
+      setError('Failed to analyze prediction with AI');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedSpecies || !nSteps || !predictionAmount) {
@@ -75,19 +131,52 @@ const DataPage = () => {
         prediction_amount: parseInt(predictionAmount)
       };
 
-      const response = await axios.post<PredictionResponse>('http://localhost:5000/predict', params);
+      // Add timeout and better error handling
+      const response = await axios.post<PredictionResponse>(
+        'http://localhost:5000/predict', 
+        params,
+        {
+          timeout: 10000,  // 10 second timeout
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
       if (response.data.success && response.data.plot) {
         setPlotData(response.data.plot);
+        console.log('Plot data received, calling Gemini analysis...');
+        await analyzeWithGemini(response.data.plot);
+        console.log('Gemini analysis completed');
       } else {
         setError('Failed to generate prediction');
       }
-      
     } catch (err) {
       console.error('Prediction error:', err);
-      setError('Failed to get prediction. Please try again.');
+      if (axios.isAxiosError(err)) {
+        if (err.code === 'ERR_NETWORK') {
+          setError('Cannot connect to server. Please make sure the backend server is running.');
+        } else if (err.code === 'ECONNABORTED') {
+          setError('Request timed out. Please try again.');
+        } else {
+          setError(`Error: ${err.message}`);
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (plotData) {
+      const link = document.createElement('a');
+      link.href = `data:image/png;base64,${plotData}`;
+      link.download = 'species_prediction.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -404,6 +493,76 @@ const DataPage = () => {
             </Box>
           )}
         </Paper>
+
+        {analysis && (
+          <Box sx={{ 
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3
+          }}>
+            {/* Risk Score Box */}
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                width: '100%',
+                backgroundColor: 'rgba(104, 57, 46, 0.9)',
+                backdropFilter: 'blur(10px)',
+                p: { xs: 3, sm: 4 },
+                borderRadius: 2,
+                animation: `${fadeIn} 0.8s ease-out 0.6s backwards`,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h4" sx={{ color: '#F5F3CD', fontWeight: 'bold' }}>
+                Risk Assessment
+              </Typography>
+              <Typography variant="h2" sx={{ color: '#F5F3CD', mt: 2 }}>
+                {analysis.riskScore}/10
+              </Typography>
+            </Paper>
+
+            {/* Explanation Box */}
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                width: '100%',
+                backgroundColor: 'rgba(104, 57, 46, 0.9)',
+                backdropFilter: 'blur(10px)',
+                p: { xs: 3, sm: 4 },
+                borderRadius: 2,
+                animation: `${fadeIn} 0.8s ease-out 0.7s backwards`,
+              }}
+            >
+              <Typography variant="h5" sx={{ color: '#F5F3CD', mb: 2, fontWeight: 'bold' }}>
+                Analysis
+              </Typography>
+              <Typography sx={{ color: '#F5F3CD', lineHeight: 1.6 }}>
+                {analysis.explanation}
+              </Typography>
+            </Paper>
+
+            {/* Prevention Box */}
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                width: '100%',
+                backgroundColor: 'rgba(104, 57, 46, 0.9)',
+                backdropFilter: 'blur(10px)',
+                p: { xs: 3, sm: 4 },
+                borderRadius: 2,
+                animation: `${fadeIn} 0.8s ease-out 0.8s backwards`,
+              }}
+            >
+              <Typography variant="h5" sx={{ color: '#F5F3CD', mb: 2, fontWeight: 'bold' }}>
+                Prevention Measures
+              </Typography>
+              <Typography sx={{ color: '#F5F3CD', lineHeight: 1.6 }}>
+                {analysis.prevention}
+              </Typography>
+            </Paper>
+          </Box>
+        )}
       </Box>
     </Box>
   );
