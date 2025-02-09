@@ -6,7 +6,7 @@ const TopBar = () => {
 
   const buttonStyle = {
     backgroundColor: 'white',
-    color: '#3892C6',
+    color: '#935341',
     padding: '6px 12px',
     borderRadius: '6px',
     border: 'none',

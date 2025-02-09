@@ -9,7 +9,7 @@ const CreditPage = () => {
         fontSize: '24px',
         fontWeight: 'bold',
         marginBottom: '24px',
-        color: '#384BC7',
+        color: '#FDFBD4',
         borderRadius:'8px',
         borderColor:'black'
       }}>
@@ -17,21 +17,21 @@ const CreditPage = () => {
       </h1>
 
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: '#68392E',
         borderRadius: '8px',
         padding: '24px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginBottom: '20px'
       }}>
         <h2 style={{
-          color:'#3892C6',
+          color:'#FDFBD4',
           fontSize: '20px',
           fontWeight: 'bold',
           marginBottom: '16px'
         }}>
           Data Source
         </h2>
-        <p style={{ marginBottom: '16px', color:'#3892C6' }}>
+        <p style={{ marginBottom: '16px', color:'#FDFBD4' }}>
           Global Biodiversity Information Facility (GBIF) - An international network and data infrastructure providing open access to data about all types of life on Earth.
         </p>
         <a 
@@ -39,7 +39,7 @@ const CreditPage = () => {
           target="_blank" 
           rel="noopener noreferrer"
           style={{
-            color: '#3892C6',
+            color: '#FDFBD4',
             textDecoration: 'none',
             fontWeight: 'bold'
           }}
@@ -49,20 +49,20 @@ const CreditPage = () => {
       </div>
 
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: '#68392E',
         borderRadius: '8px',
         padding: '24px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
         <h2 style={{
-          color:'#3892C6',
+          color:'#FDFBD4',
           fontSize: '20px',
           fontWeight: 'bold',
           marginBottom: '16px'
         }}>
           Development Assistant
         </h2>
-        <p style={{ marginBottom: '16px' , color:"#3892C6"}}>
+        <p style={{ marginBottom: '16px' , color:"#FDFBD4"}}>
           Claude AI (Anthropic) - An AI assistant that helped with code development, debugging, and implementation of various features in this project.
         </p>
         <a 
@@ -70,7 +70,7 @@ const CreditPage = () => {
           target="_blank" 
           rel="noopener noreferrer"
           style={{
-            color: '#3892C6',
+            color: '#FDFBD4',
             textDecoration: 'none',
             fontWeight: 'bold'
           }}

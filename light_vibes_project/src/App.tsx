@@ -24,10 +24,9 @@ function App() {
               <path id="onda" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352Z" />
             </defs>
             <g className="parallaxonde">
-              <use xlinkHref="#onda" x="48" y="1" fill="rgba(17,170,159,0.6)" />
-              <use xlinkHref="#onda" x="48" y="3" fill="rgba(17,170,159,0.4)" />
-              <use xlinkHref="#onda" x="48" y="5" fill="rgba(17,170,159,0.1)" />
-              <use xlinkHref="#onda" x="48" y="10" fill="#3892C6" />
+              <use xlinkHref="#onda" x="48" y="1" fill="#935341" />
+              <use xlinkHref="#onda" x="48" y="5" fill="#4F834F" />
+              <use xlinkHref="#onda" x="48" y="10" fill="#28663F" />
             </g>
           </svg>
         </div>
@@ -54,7 +53,7 @@ function App() {
               />
               <h1 style={{
                 fontSize: '2.5rem',
-                color: '#3892C6',
+                color: '#FDFBD4',
                 fontWeight: 'bold'
               }}>
                 Marine Life Tracker
