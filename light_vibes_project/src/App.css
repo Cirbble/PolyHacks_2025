@@ -204,11 +204,6 @@
   animation-duration: 13s;
 }
 
-.parallaxonde > use:nth-child(4) {
-  animation-delay: -5s;
-  animation-duration: 20s;
-}
-
 @keyframes moveForever {
   0% {
     transform: translate3d(-90px, 0, 0);
@@ -259,19 +254,19 @@
 
 @keyframes moveUp {
   0% {
-    transform: translateY(0);  /* "the animals" */
+    transform: translateY(40px);  /* "the animals" */
   }
   25% {
-    transform: translateY(-40px);  /* "the plants" */
+    transform: translateY(0px);  /* "the plants" */
   }
   50% {
-    transform: translateY(-80px);  /* "the ecosystems" */
+    transform: translateY(-40px);  /* "the ecosystems" */
   }
   75% {
-    transform: translateY(-120px);  /* "everybody" */
+    transform: translateY(-80px);  /* "everybody" */
   }
   100% {
-    transform: translateY(-160px);  /* back to "the animals" */
+    transform: translateY(-120px);  /* back to "the animals" */
   }
 }
 
