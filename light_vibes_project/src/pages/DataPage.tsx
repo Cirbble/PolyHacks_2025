@@ -63,8 +63,18 @@ const DataPage = () => {
   const [plotData, setPlotData] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
-  // For now, just one species
-  const speciesList = ['Disporella hispida'];
+  // Updated species list with 9 total species
+  const speciesList = [
+    'Disporella hispida',          // Lace coral
+    'Mustela nigripes',            // Black-footed ferret
+    'Panthera tigris',             // Tiger
+    'Diceros bicornis',            // Black rhinoceros
+    'Gorilla beringei',            // Mountain gorilla
+    'Panthera uncia',              // Snow leopard
+    'Phocoena sinus',              // Vaquita porpoise
+    'Gymnogyps californianus',      // California condor
+    'Ailuropoda melanoleuca'       // Giant panda
+  ];
 
   const analyzeWithGemini = async (imageBase64: string) => {
     const genAI = new GoogleGenerativeAI('AIzaSyAY-_EpdlXExMzZW1iGqqQRqHPVlaWEwaQ'); // Replace with your actual API key
@@ -131,17 +141,7 @@ const DataPage = () => {
         prediction_amount: parseInt(predictionAmount)
       };
 
-      // Add timeout and better error handling
-      const response = await axios.post<PredictionResponse>(
-        'http://localhost:5000/predict', 
-        params,
-        {
-          timeout: 10000,  // 10 second timeout
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const response = await axios.post<PredictionResponse>('http://localhost:5000/predict', params);
       
       if (response.data.success && response.data.plot) {
         setPlotData(response.data.plot);
@@ -153,17 +153,7 @@ const DataPage = () => {
       }
     } catch (err) {
       console.error('Prediction error:', err);
-      if (axios.isAxiosError(err)) {
-        if (err.code === 'ERR_NETWORK') {
-          setError('Cannot connect to server. Please make sure the backend server is running.');
-        } else if (err.code === 'ECONNABORTED') {
-          setError('Request timed out. Please try again.');
-        } else {
-          setError(`Error: ${err.message}`);
-        }
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+      setError('Failed to get prediction. Please try again.');
     } finally {
       setLoading(false);
     }

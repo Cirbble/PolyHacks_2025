@@ -72,6 +72,14 @@ function App() {
                     </ul>
                   </div>
                 </div>
+
+                <div className="mission-statement">
+                  We wanted to build a project that would have a real impact on the environment and ecosystems, as we understand how important they are for the survival of all life on Earth! We ended up settling on this idea, because not only can it raise awareness about the potential risks posed to wildlife, but also can work as an actual plan to combat the extinction of these precious beings.
+                </div>
+
+                <div className="mission-statement technical">
+                  Using Gbif's dataset of animal observations, we were able to create a map to visualize the data in a convenient way to better understand the population level of various species. We then trained an AI model on data from many land species in order to predict future levels based on past data. Using this, we use an LLM (Google's Gemini) to give a report based on the graph outputted, and give the risk of extinction as well as a plan to overcome this risk.
+                </div>
               </main>
             </>
           } />
